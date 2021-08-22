@@ -1,0 +1,10 @@
+<bean id="userService" class="com.spring.service.UserServiceTx">
+    <property name="userService" ref="userServiceImpl"/>
+    <property name="transactionManager" ref="transactionManager"/>
+</bean>
+
+<bean id="userServiceImpl" class="com.spring.service.UserServiceImpl">
+    <property name="userDao" ref="userDaoJdbc"/>
+    <property name="userLevelUpgradePolicy" ref="userLevelUpgradePolicy"/>
+    <property name="mailSender" ref="mailSender"/>
+</bean>
