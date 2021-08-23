@@ -10,6 +10,7 @@ import com.spring.service.UserServiceImpl;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.mail.MailSender;
@@ -37,6 +38,8 @@ public class UserServiceTest {
 
     @Autowired
     UserService userService;
+    @Autowired
+    UserService testUserService;
 
     @Autowired
     UserServiceImpl userServiceImpl;
@@ -46,24 +49,14 @@ public class UserServiceTest {
 
     @Test
     @DirtiesContext
-    public void upgradeAllOrNothing() throws Exception {
-        TestUserService testUserService = new TestUserService(users.get(3).getId());
-        testUserService.setUserDao(userDao);
-        testUserService.setMailSender(mailSender);
-
-        // 테스트용 타깃 주입
-        TxProxyFactoryBean txProxyFactoryBean = context.getBean("&userService", TxProxyFactoryBean.class);
-        txProxyFactoryBean.setTarget(testUserService);
-        UserService txUserService = (UserService) txProxyFactoryBean.getObject();
-
+    void upgradeAllOrNothing() throws Exception {
         userDao.deleteAll();
-        for(User user: users) userDao.add(user);
+        users.forEach(user -> userDao.add(user));
 
         try {
-            txUserService.upgradeLevels();
-            fail("TestUserServiceException expected");
-        } catch (TestUserServiceException e) {
-
+            testUserService.upgradeLevels();
+        } catch (IllegalArgumentException e) {
+            System.out.println("hi");
         }
 
         checkLevelUpgraded(users.get(1), false);
@@ -107,20 +100,17 @@ public class UserServiceTest {
         }
     }
 
-    static class TestUserService extends UserServiceImpl {
-        private String id;
+    static class TestUserServiceImpl extends UserServiceImpl {
 
-        private TestUserService(String id) {
-            this.id = id;
-        }
+        private String id = "madnite1";
 
+        @Override
         protected void upgradeLevel(User user) {
             if (user.getId().equals(this.id)) {
-                throw new TestUserServiceException();
+                throw new IllegalArgumentException();
             }
             super.upgradeLevel(user);
         }
     }
-
     static class TestUserServiceException extends RuntimeException {}
 }
